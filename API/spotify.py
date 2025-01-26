@@ -1,7 +1,4 @@
-import os
-from dotenv import load_dotenv
-load_dotenv()
+from baseAPI import baseAPI
 
-client_id = os.getenv('spotify_ID')
-client_secret = os.getenv('spotify_SECRET')
+from config import spotify_id, spotify_secret
 
