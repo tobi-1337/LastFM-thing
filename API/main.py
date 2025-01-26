@@ -13,8 +13,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials= True,
-    allow_methods=["GET"],#endast GET tillåts eftersom vi använder bara GET?
-    allow_headers=["*"] # behövs någon mer header? vi har ingen autorisering eller säkerhet så tänker att nej, men osäker?!
+    allow_methods=["GET"],
+    allow_headers=["*"]
 )
 
 
@@ -22,3 +22,11 @@ app.add_middleware(
 async def root(request: Request):
     return {'message' : 'hello'}
 
+
+@app.get('/callback/spotify')
+async def callback(request: Request):
+    pass
+
+@app.get('/callback/lastfm')
+async def callback(request: Request):
+    pass
