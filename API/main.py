@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo, available_timezones
 from lastFM import lastFMAPI
 import config
 import requests
+from datetime import datetime
 
 app = FastAPI()
 
@@ -29,8 +30,6 @@ lastfm = lastFMAPI(
 async def root(request: Request):
     return {'message' : 'hello'}
 
-
-
 @app.get('/lastfm/user/info/{username}')
 async def lastfm_user_info(username: str):
     try: 
@@ -38,6 +37,23 @@ async def lastfm_user_info(username: str):
         return {'user_info' : user_info}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get('/lastfm/top-artist/{username}/{period}')
+async def lastfm_top_artists(username: str, period: str):
+    try: 
+        top_artists = lastfm.get_top_artists(username, period)
+        return {'top_artists' : top_artists}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get('/lastfm/weekly-chart/{username}')
+async def lastfm_weekly_chart(username: str):
+    try: 
+        weekly_chart = lastfm.get_weekly_chart(username)
+        return {'weekly_chart' : weekly_chart}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.get('/callback/spotify')

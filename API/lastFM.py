@@ -1,6 +1,6 @@
 import hashlib
 import requests
-
+import json
 class lastFMAPI():
     def __init__(self, api_key, api_secret):
         self.base_url = 'http://ws.audioscrobbler.com/2.0/'
@@ -40,4 +40,27 @@ class lastFMAPI():
             'format' : 'json'
         }
         print("Request params:", params)
+        return self._request('GET', params=params)
+    
+    def get_top_artists(self, user, period='overall'):
+        params = {
+            'method' : 'user.getTopArtists',
+            'user' : user,
+            'period' : period,
+            'api_key' : self.api_key,
+            'limit' : 50,
+            'format' : 'json'
+        }
+        return self._request('GET', params=params)
+    
+    def get_weekly_chart(self, user):
+        params = {
+            'method' : 'user.getWeeklyChartList',
+            'user' : user,
+            'api_key' : self.api_key,
+            'format' : 'json'
+        }
+        #response = self._request('GET', params=params)
+        #weekly_chart = response['chart']
+        #print(weekly_chart)
         return self._request('GET', params=params)
