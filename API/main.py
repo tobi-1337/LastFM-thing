@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Header, Request, HTTPException
+from fastapi import FastAPI, Header, Request, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from typing import Dict
@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo, available_timezones
 from lastFM import lastFMAPI
 import config
 import requests
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import pytz
 app = FastAPI()
 
@@ -34,7 +34,26 @@ def get_user_timezone(ip):
     except:
         return "Europe/Stockholm"
     
+def find_week_range(weekly_chart, target_date):
+    target_timestamp = int(datetime.strptime(target_date, "%Y-%m-%d").timestamp())
+    for week in weekly_chart:
+        start = int(week["from"])
+        end = int(week["to"])
 
+        if start <= target_timestamp <= end:
+            return start, end
+    return None, None
+
+def get_unix_from_week(week_str): 
+    try:
+        year, week = map(int, week_str.split("-"))
+
+        start_date = datetime.strptime(f"{year}-W{week}-1", "%Y-W%W-%w")
+        end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+        return int(start_date.timestamp()), int(end_date.timestamp())
+    except ValueError:
+        return None, None
 @app.get('/')
 async def root(request: Request):
     return {'message' : 'hello'}
@@ -54,6 +73,28 @@ async def lastfm_top_artists(username: str, period: str):
         return {'top_artists' : top_artists}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get('/lastfm/weekly-artist/{username}')
+async def lastfm_weekly_artist(username: str, week: str = Query(default=None, description="YYYY-WW format")):
+    try: 
+        if week is None:
+            today = date.today()
+            week = f"{today.year}-{today.isocalendar()[1]}"
+
+        from_unix, to_unix = get_unix_from_week(week)
+
+        if not from_unix or not to_unix:
+            raise HTTPException(status_code=404, detail="Finns ingen för vald vecka")
+        
+        weekly_artist_list = lastfm.get_weekly_artist(username, from_unix, to_unix)
+        artist_list = weekly_artist_list['weeklyartistchart']['artist']
+        for artist in artist_list:
+            print(artist)
+        return {'weekly_artist' : artist}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get('/lastfm/weekly-chart/{username}')
 async def lastfm_weekly_chart(username: str, user_ip: str = "8.8.8.8"):

@@ -66,3 +66,14 @@ class lastFMAPI():
         #print(weekly_chart)
         result = self._request('GET', params=params)
         return result['weeklychartlist']['chart']
+    
+    def get_weekly_artist(self, user, from_unix = None, to_unix = None):
+        params = {
+            'method' : 'user.getWeeklyArtistChart',
+            'user' : user,
+            'from' : from_unix,
+            'to' : to_unix,
+            'api_key' : self.api_key,
+            'format' : 'json'
+        }
+        return self._request('GET', params=params)
