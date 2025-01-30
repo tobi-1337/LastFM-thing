@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo, available_timezones
 from lastFM import lastFMAPI
 import config
 import requests
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import pytz
 app = FastAPI()
 
@@ -48,9 +48,10 @@ def get_unix_from_week(week_str):
     try:
         year, week = map(int, week_str.split("-"))
 
-        start_date = datetime.strptime(f"{year}-W{week}-1", "%Y-W%W-%w")
+        start_date = datetime.strptime(f"{year}-W{week - 1}-1", "%Y-W%W-%w")
+        print(f"✅ Beräknad måndag: {start_date.strftime('%Y-%m-%d')}")
         end_date = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
-
+        print(f"✅ Beräknad söndag: {end_date.strftime('%Y-%m-%d')}")
         return int(start_date.timestamp()), int(end_date.timestamp())
     except ValueError:
         return None, None
@@ -78,11 +79,9 @@ async def lastfm_top_artists(username: str, period: str):
 async def lastfm_weekly_artist(username: str, week: str = Query(default=None, description="YYYY-WW format")):
     try: 
         if week is None:
-            today = date.today()
+            today = datetime.now(timezone.utc).date()
             week = f"{today.year}-{today.isocalendar()[1]}"
-
         from_unix, to_unix = get_unix_from_week(week)
-
         if not from_unix or not to_unix:
             raise HTTPException(status_code=404, detail="Finns ingen för vald vecka")
         
@@ -90,7 +89,7 @@ async def lastfm_weekly_artist(username: str, week: str = Query(default=None, de
         artist_list = weekly_artist_list['weeklyartistchart']['artist']
         for artist in artist_list:
             print(artist)
-        return {'weekly_artist' : artist}
+        return {'weekly_artist' : weekly_artist_list}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
