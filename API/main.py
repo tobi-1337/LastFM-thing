@@ -10,7 +10,7 @@ from lastFM import lastFMAPI
 import config
 import requests
 from datetime import datetime
-
+import pytz
 app = FastAPI()
 
 app.add_middleware(
@@ -25,6 +25,15 @@ lastfm = lastFMAPI(
     api_key=config.lastFM_key,
     api_secret=config.lastFM_secret,
 )
+
+def get_user_timezone(ip):
+    try:
+        response = requests.get(f"https://ipinfo.io/{ip}/json")
+        data = response.json()
+        return data.get("timezone", "Europe/Stockholm")
+    except:
+        return "Europe/Stockholm"
+    
 
 @app.get('/')
 async def root(request: Request):
@@ -47,10 +56,20 @@ async def lastfm_top_artists(username: str, period: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get('/lastfm/weekly-chart/{username}')
-async def lastfm_weekly_chart(username: str):
+async def lastfm_weekly_chart(username: str, user_ip: str = "8.8.8.8"):
     try: 
         weekly_chart = lastfm.get_weekly_chart(username)
-        return {'weekly_chart' : weekly_chart}
+        user_timezone = get_user_timezone(user_ip)
+
+        formatted_chart = [
+            {
+                "FROM" : datetime.fromtimestamp(int(week["from"]), tz=pytz.utc).astimezone(pytz.timezone(user_timezone)).strftime("%Y-%m-%d"),
+                "TO" : datetime.fromtimestamp(int(week["to"]), tz=pytz.utc).astimezone(pytz.timezone(user_timezone)).strftime("%Y-%m-%d")
+            }
+            for week in weekly_chart
+        ]
+
+        return {'weekly_chart' : formatted_chart, "timezone": user_timezone}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
